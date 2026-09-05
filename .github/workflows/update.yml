@@ -1,0 +1,42 @@
+name: Update scores
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-scores
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install openpyxl
+
+      - name: Fetch draw and rebuild data.json
+        run: python scripts/fetch_data.py
+
+      - name: Commit and push if data changed
+        run: |
+          if git diff --quiet -- docs/data.json && [ -z "$(git status --porcelain -- docs/data.json)" ]; then
+            echo "No change to docs/data.json — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          git commit -m "Update scores $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push

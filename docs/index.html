@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Live scores and draw for the NZ Secondary Schools Underwater Hockey Nationals 2026.">
+<title>UWH Nationals 2026 — Live Scores</title>
+<style>
+  :root{
+    --bg:#080c11;
+    --bg2:#0d131b;
+    --panel:#131b25;
+    --panel2:#18222e;
+    --line:#26323f;
+    --line2:#33424f;
+    --text:#e8eef6;
+    --muted:#8fa1b5;
+    --muted2:#68788b;
+    --accent:#3ad6ff;
+    --a-team:#22d3ee;
+    --b-team:#fbbf24;
+    --win:#34d399;
+    --loss:#f87171;
+    --draw:#a3b3c4;
+    --radius:14px;
+    --shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 520px at 50% -10%, #12303f 0%, rgba(18,48,63,0) 62%),
+      var(--bg);
+    color:var(--text);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-text-size-adjust:100%;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 12px}
+
+  /* ---------- header ---------- */
+  header.top{
+    padding:20px 0 12px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:14px;
+  }
+  .eyebrow{
+    display:inline-block;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:#0a1016;background:linear-gradient(95deg,var(--accent),#67e8f9);
+    font-weight:800;padding:3px 9px;border-radius:999px;margin-bottom:9px;
+  }
+  h1{
+    margin:0 0 4px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.01em;
+  }
+  .venue{color:var(--muted);font-size:14px;margin:0 0 10px}
+  .metaline{
+    display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;
+    font-size:12px;color:var(--muted2);
+  }
+  .metaline .dot{opacity:.5}
+  .tag{
+    border:1px solid var(--line2);border-radius:999px;padding:2px 8px;
+    color:var(--muted);white-space:nowrap;
+  }
+  .live{color:var(--accent);border-color:rgba(58,214,255,.35);background:rgba(58,214,255,.07)}
+  button.refresh{
+    margin-left:auto;background:var(--panel);color:var(--muted);
+    border:1px solid var(--line2);border-radius:999px;
+    font-size:12px;padding:3px 10px;cursor:pointer;font-family:inherit;
+  }
+  button.refresh:active{background:var(--panel2)}
+  button.refresh[disabled]{opacity:.5}
+
+  /* ---------- generic ---------- */
+  h2.sec{
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted2);font-weight:700;margin:22px 0 10px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .notice{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;text-align:center;color:var(--muted);
+  }
+  .notice.err{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.07);color:#fecaca}
+  .notice strong{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
+  .btn{
+    display:inline-block;margin-top:12px;background:var(--accent);color:#04121a;
+    border:0;border-radius:10px;padding:9px 18px;font-weight:700;font-size:14px;
+    cursor:pointer;font-family:inherit;
+  }
+  .btn:active{opacity:.85}
+
+  /* ---------- controls ---------- */
+  .controls{margin:4px 0 6px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{
+    background:var(--panel);border:1px solid var(--line2);color:var(--muted);
+    border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:inherit;line-height:1.2;
+  }
+  .chip[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:#04121a;
+  }
+  .chip.toggle[aria-pressed="true"]{
+    background:linear-gradient(95deg,var(--a-team),var(--b-team));border-color:transparent;color:#0a1016;
+  }
+  .chips.row2{margin-top:6px}
+
+  /* ---------- team cards ---------- */
+  .teamcard{margin-bottom:12px;border-left:4px solid var(--tc,var(--accent))}
+  .teamhead{padding:13px 14px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .teamname{font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--tc,var(--text));margin:0}
+  .record{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:12px}
+  .stat{
+    background:var(--bg2);border:1px solid var(--line);border-radius:8px;
+    padding:4px 9px;color:var(--muted);white-space:nowrap;
+  }
+  .stat b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+  .tgame{
+    display:flex;gap:10px;align-items:center;
+    padding:10px 14px;border-top:1px solid var(--line);
+  }
+  .tgame:first-child{border-top:0}
+  .tgame.next{background:rgba(58,214,255,.06)}
+  .tgame .l{flex:1;min-width:0}
+  .tgame .when{font-size:11px;color:var(--muted2);letter-spacing:.03em}
+  .tgame .opp{font-size:15px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+  .tgame .opp .vs{color:var(--muted2);font-weight:500;font-size:13px}
+  .tgame .r{text-align:right;flex:0 0 auto;display:flex;align-items:center;gap:8px}
+  .kick{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text)}
+  .score{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:24px;height:24px;border-radius:7px;font-size:12px;font-weight:800;
+    color:#06110c;
+  }
+  .badge.W{background:var(--win)}
+  .badge.L{background:var(--loss);color:#1a0606}
+  .badge.D{background:var(--draw);color:#0e1319}
+  .pill-next{
+    display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:#04121a;background:var(--accent);
+    border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:1px;
+  }
+  .empty{padding:14px;color:var(--muted2);font-size:14px}
+
+  /* ---------- schedule ---------- */
+  .day{margin-bottom:10px}
+  .dayhead{
+    width:100%;display:flex;align-items:center;gap:8px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    color:var(--text);font:inherit;font-weight:700;font-size:15px;
+    padding:12px 14px;cursor:pointer;text-align:left;
+  }
+  .day.open .dayhead{border-radius:12px 12px 0 0;border-bottom-color:transparent}
+  .dayhead .caret{
+    color:var(--muted);font-size:12px;transition:transform .15s ease;flex:0 0 auto;
+  }
+  .day.open .dayhead .caret{transform:rotate(90deg)}
+  .dayhead .today{
+    font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:#04121a;background:var(--accent);border-radius:999px;padding:2px 7px;
+  }
+  .dayhead .count{margin-left:auto;font-size:12px;color:var(--muted2);font-weight:600}
+  .daybody{
+    border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;
+    overflow:hidden;background:var(--panel);
+  }
+  .day:not(.open) .daybody{display:none}
+
+  .g{
+    display:block;padding:10px 12px;border-top:1px solid var(--line);
+    border-left:4px solid transparent;
+  }
+  .g:first-child{border-top:0}
+  .g.tA{border-left-color:var(--a-team);background:rgba(34,211,238,.07)}
+  .g.tB{border-left-color:var(--b-team);background:rgba(251,191,36,.07)}
+  .g.tAB{border-left-color:var(--a-team);background:linear-gradient(90deg,rgba(34,211,238,.10),rgba(251,191,36,.10))}
+  .g .top{
+    display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;
+    font-size:11px;color:var(--muted2);letter-spacing:.03em;margin-bottom:6px;
+  }
+  .g .top .t{color:var(--text);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;letter-spacing:0}
+  .g .top .stage{color:var(--muted);overflow-wrap:anywhere}
+  .g .top .gno{margin-left:auto;color:var(--muted2)}
+  .g .body{display:flex;align-items:center;gap:8px}
+  .g .side{flex:1;min-width:0;display:flex;align-items:center;gap:7px}
+  .g .side.b{justify-content:flex-end;text-align:right}
+  .g .nm{font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.25}
+  .g .nm .src{display:block;font-size:10px;color:var(--muted2);font-weight:500;letter-spacing:.02em}
+  .g .nm.mine{font-weight:800}
+  .g .mid{
+    flex:0 0 auto;min-width:62px;text-align:center;
+    font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;
+  }
+  .g .mid.pending{font-size:14px;font-weight:600;color:var(--muted2)}
+  .g .mid .w{color:var(--win)}
+  .chipdot{
+    flex:0 0 auto;width:12px;height:12px;border-radius:4px;
+  }
+  .chipdot.white{background:#f2f6fb;border:1px solid #cbd5e1}
+  .chipdot.black{background:#0b1017;border:1px solid #46586b}
+  .nextmark{
+    display:flex;align-items:center;gap:8px;
+    padding:7px 12px;border-top:1px solid var(--line);
+    background:rgba(58,214,255,.10);
+    color:var(--accent);font-size:11px;font-weight:800;
+    letter-spacing:.12em;text-transform:uppercase;
+  }
+  .nextmark:first-child{border-top:0}
+  .nextmark .line{flex:1;height:1px;background:rgba(58,214,255,.3)}
+
+  footer{margin-top:26px;color:var(--muted2);font-size:11px;text-align:center;line-height:1.6}
+
+  @media (min-width:560px){
+    h1{font-size:29px}
+    .wrap{padding:0 18px}
+    .g .mid{min-width:76px;font-size:18px}
+    .g .nm{font-size:15px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <span class="eyebrow" id="eyebrow">Live scores</span>
+    <h1 id="tname">UWH Nationals 2026</h1>
+    <p class="venue" id="tvenue">Loading draw…</p>
+    <div class="metaline">
+      <span class="tag">All times NZST</span>
+      <span class="tag live">Updated every 20 min</span>
+      <span class="dot">·</span>
+      <span id="lastchange">last change —</span>
+      <button class="refresh" id="refreshbtn" type="button" title="Reload now">↻</button>
+    </div>
+  </header>
+
+  <div id="status"></div>
+
+  <main id="main" hidden>
+    <div class="controls">
+      <div class="chips" id="divfilter"></div>
+      <div class="chips row2">
+        <button class="chip toggle" id="mytoggle" type="button" aria-pressed="false">★ My teams only</button>
+      </div>
+    </div>
+
+    <h2 class="sec">My teams</h2>
+    <div id="teamcards"></div>
+
+    <h2 class="sec">Full schedule</h2>
+    <div id="schedule"></div>
+  </main>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var FALLBACK_TEAMS = ["JOB HC-BD", "SGB Howick"];
+  var DIVISIONS = ["SGA","SGB","SOA","SOB","JGA","JGB","JOA","JOB"];
+  var REFRESH_MS = 5 * 60 * 1000;
+  var TZ = "Pacific/Auckland";
+  var DASH = "–";
+
+  var S = {
+    raw:null,
+    games:[],
+    teams:FALLBACK_TEAMS.slice(),
+    division:"ALL",
+    myOnly:false,
+    expanded:null,     // Set of group keys, null until first load
+    loaded:false,
+    fetching:false
+  };
+
+  var el = {
+    eyebrow:  document.getElementById("eyebrow"),
+    tname:    document.getElementById("tname"),
+    tvenue:   document.getElementById("tvenue"),
+    last:     document.getElementById("lastchange"),
+    refresh:  document.getElementById("refreshbtn"),
+    status:   document.getElementById("status"),
+    main:     document.getElementById("main"),
+    divf:     document.getElementById("divfilter"),
+    mytog:    document.getElementById("mytoggle"),
+    cards:    document.getElementById("teamcards"),
+    sched:    document.getElementById("schedule"),
+    foot:     document.getElementById("foot")
+  };
+
+  /* ---------------- helpers ---------------- */
+
+  function esc(s){
+    return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function str(v){
+    if (typeof v === "string"){ var t = v.trim(); return t ? t : ""; }
+    if (typeof v === "number" && isFinite(v)) return String(v);
+    return "";
+  }
+  function num(v){
+    if (typeof v === "number" && isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "" && isFinite(Number(v))) return Number(v);
+    return null;
+  }
+  function key(name){ return String(name || "").trim().toLowerCase(); }
+  function pad2(n){ return (n < 10 ? "0" : "") + n; }
+
+  function nzToday(){
+    try{
+      var p = new Intl.DateTimeFormat("en-US",{
+        timeZone:TZ, year:"numeric", month:"2-digit", day:"2-digit"
+      }).formatToParts(new Date());
+      var o = {};
+      for (var i=0;i<p.length;i++) o[p[i].type] = p[i].value;
+      if (o.year && o.month && o.day) return o.year + "-" + o.month + "-" + o.day;
+    }catch(e){}
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+  }
+
+  function relTime(iso){
+    if (!iso) return "unknown";
+    var t = Date.parse(iso);
+    if (isNaN(t)) return "unknown";
+    var s = Math.round((Date.now() - t) / 1000);
+    if (s < 0) s = 0;
+    if (s < 45) return "just now";
+    if (s < 90) return "1 min ago";
+    var m = Math.round(s/60);
+    if (m < 60) return m + " min ago";
+    var h = Math.floor(m/60);
+    if (h < 24) return h + (h===1 ? " hour ago" : " hours ago");
+    var d = Math.round(h/24);
+    return d + (d===1 ? " day ago" : " days ago");
+  }
+
+  function dayShort(day, date){
+    var d = str(day);
+    if (d) {
+      var w = d.split(/\s+/)[0];
+      if (w && w.length > 3) return w.slice(0,3);
+      if (w) return w;
+    }
+    return str(date);
+  }
+
+  /* ---------------- normalise ---------------- */
+
+  function normalise(data){
+    var raw = (data && Object.prototype.toString.call(data.games) === "[object Array]") ? data.games : [];
+    var teams = [];
+    if (data && Object.prototype.toString.call(data.tracked_teams) === "[object Array]"){
+      for (var i=0;i<data.tracked_teams.length;i++){
+        var t = str(data.tracked_teams[i]);
+        if (t) teams.push(t);
+      }
+    }
+    if (!teams.length) teams = FALLBACK_TEAMS.slice();
+    S.teams = teams;
+
+    var out = [];
+    for (var j=0;j<raw.length;j++){
+      var g = raw[j] || {};
+      // defensive: skip rows with no teams at all (shouldn't be emitted, but don't render junk)
+      if (!str(g.white) && !str(g.black)) continue;
+      var ws = num(g.white_score), bs = num(g.black_score);
+      out.push({
+        i: j,
+        game: num(g.game),
+        day: str(g.day),
+        date: str(g.date),
+        time: str(g.time),
+        court: num(g.court),
+        white: str(g.white) || "TBC",
+        black: str(g.black) || "TBC",
+        ws: ws,
+        bs: bs,
+        played: (ws !== null && bs !== null),
+        stage: str(g.stage),
+        division: str(g.division).toUpperCase(),
+        wsrc: str(g.white_source),
+        bsrc: str(g.black_source)
+      });
+    }
+    out.sort(function(a,b){
+      var ad = a.date || "9999-99-99", bd = b.date || "9999-99-99";
+      if (ad !== bd) return ad < bd ? -1 : 1;
+      var at = a.time || "99:99", bt = b.time || "99:99";
+      if (at !== bt) return at < bt ? -1 : 1;
+      var ac = a.court === null ? 99 : a.court, bc = b.court === null ? 99 : b.court;
+      if (ac !== bc) return ac - bc;
+      var ag = a.game === null ? 1e9 : a.game, bg = b.game === null ? 1e9 : b.game;
+      if (ag !== bg) return ag - bg;
+      return a.i - b.i;
+    });
+    for (var k=0;k<out.length;k++) out[k].ord = k;
+    return out;
+  }
+
+  function teamIndex(g){          // 0 = first tracked team, 1 = second, -1 = none
+    var res = [];
+    for (var i=0;i<S.teams.length;i++){
+      var k = key(S.teams[i]);
+      if (key(g.white) === k || key(g.black) === k) res.push(i);
+    }
+    return res;
+  }
+  function hasTracked(g){ return teamIndex(g).length > 0; }
+
+  function divMatch(g){
+    if (S.division === "ALL") return true;
+    var d = g.division;
+    if (!d) return false;
+    if (d === S.division) return true;
+    // 2-letter knockout group (e.g. "JO") matches JOA and JOB
+    if (d.length === 2 && S.division.length > 2 && S.division.indexOf(d) === 0) return true;
+    return false;
+  }
+  function visible(g){
+    if (!divMatch(g)) return false;
+    if (S.myOnly && !hasTracked(g)) return false;
+    return true;
+  }
+
+  /* ---------------- rendering: header ---------------- */
+
+  function renderHeader(){
+    var d = S.raw || {};
+    var name = str(d.tournament) || "UWH Nationals 2026";
+    var venue = str(d.venue);
+    var ver = str(d.draw_version);
+    document.title = name + " — Live Scores";
+    el.tname.textContent = name;
+    el.tvenue.textContent = venue || "";
+    el.tvenue.style.display = venue ? "" : "none";
+    el.last.textContent = "last change " + relTime(d.generated_at);
+    var bits = [];
+    if (ver) bits.push("Draw version " + ver);
+    bits.push("Data from the official tournament sheet, refreshed every 20 minutes.");
+    if (S.games.length) bits.push(S.games.length + " games in the draw.");
+    el.foot.textContent = bits.join(" · ");
+  }
+
+  /* ---------------- rendering: controls ---------------- */
+
+  function renderControls(){
+    var html = '<button class="chip" type="button" data-div="ALL" aria-pressed="' +
+               (S.division === "ALL") + '">All</button>';
+    for (var i=0;i<DIVISIONS.length;i++){
+      var dv = DIVISIONS[i];
+      html += '<button class="chip" type="button" data-div="' + dv + '" aria-pressed="' +
+              (S.division === dv) + '">' + dv + '</button>';
+    }
+    el.divf.innerHTML = html;
+    el.mytog.setAttribute("aria-pressed", S.myOnly ? "true" : "false");
+  }
+
+  el.divf.addEventListener("click", function(ev){
+    var b = ev.target.closest ? ev.target.closest("button[data-div]") : null;
+    if (!b) return;
+    S.division = b.getAttribute("data-div");
+    renderControls();
+    renderSchedule();
+  });
+  el.mytog.addEventListener("click", function(){
+    S.myOnly = !S.myOnly;
+    renderControls();
+    renderSchedule();
+  });
+
+  /* ---------------- rendering: team cards ---------------- */
+
+  function outcome(g, team){
+    var mineWhite = key(g.white) === key(team);
+    var my = mineWhite ? g.ws : g.bs;
+    var th = mineWhite ? g.bs : g.ws;
+    if (my === null || th === null) return null;
+    return { my:my, th:th, res: my > th ? "W" : (my < th ? "L" : "D"),
+             opp: mineWhite ? g.black : g.white, mineWhite: mineWhite };
+  }
+
+  function renderTeamCards(){
+    var out = "";
+    for (var t=0;t<S.teams.length;t++){
+      var team = S.teams[t];
+      var colour = t === 0 ? "var(--a-team)" : (t === 1 ? "var(--b-team)" : "var(--accent)");
+      var mine = [];
+      for (var i=0;i<S.games.length;i++){
+        var g = S.games[i];
+        if (key(g.white) === key(team) || key(g.black) === key(team)) mine.push(g);
+      }
+      var w=0,dr=0,l=0,gf=0,ga=0,pl=0;
+      for (var j=0;j<mine.length;j++){
+        var o = outcome(mine[j], team);
+        if (!o) continue;
+        pl++;
+        gf += o.my; ga += o.th;
+        if (o.res === "W") w++; else if (o.res === "L") l++; else dr++;
+      }
+      var diff = gf - ga;
+      var nextOrd = -1;
+      for (var n=0;n<mine.length;n++){ if (!mine[n].played){ nextOrd = mine[n].ord; break; } }
+
+      var rows = "";
+      if (!mine.length){
+        rows = '<div class="empty">No games listed for this team yet.</div>';
+      } else {
+        for (var r=0;r<mine.length;r++){
+          var gm = mine[r];
+          var mineWhite = key(gm.white) === key(team);
+          var opp = mineWhite ? gm.black : gm.white;
+          var isNext = gm.ord === nextOrd;
+          var when = [];
+          if (gm.day || gm.date) when.push(dayShort(gm.day, gm.date));
+          if (gm.time) when.push(gm.time);
+          if (gm.court !== null) when.push("Court " + gm.court);
+          if (gm.game !== null) when.push("#" + gm.game);
+          if (gm.stage) when.push(gm.stage);
+          var right;
+          if (gm.played){
+            var oc = outcome(gm, team);
+            right = '<span class="score">' + esc(oc.my) + " " + DASH + " " + esc(oc.th) + '</span>' +
+                    '<span class="badge ' + oc.res + '">' + oc.res + '</span>';
+          } else {
+            right = '<span class="kick">' + esc(gm.time || "TBC") + '</span>';
+          }
+          rows += '<div class="tgame' + (isNext ? " next" : "") + '">' +
+                    '<div class="l">' +
+                      '<div class="when">' + esc(when.join(" · ")) +
+                        (isNext ? '<span class="pill-next">Next up</span>' : "") +
+                      '</div>' +
+                      '<div class="opp">' +
+                        '<span class="chipdot ' + (mineWhite ? "white" : "black") +
+                        '" style="display:inline-block;vertical-align:-1px;margin-right:5px"></span>' +
+                        '<span class="vs">vs</span> ' + esc(opp) +
+                      '</div>' +
+                    '</div>' +
+                    '<div class="r">' + right + '</div>' +
+                  '</div>';
+        }
+      }
+
+      out += '<section class="card teamcard" style="--tc:' + colour + '">' +
+               '<div class="teamhead">' +
+                 '<h3 class="teamname">' + esc(team) + '</h3>' +
+                 '<div class="record">' +
+                   '<span class="stat"><b>' + w + DASH + dr + DASH + l + '</b> W' + DASH + 'D' + DASH + 'L</span>' +
+                   '<span class="stat">Goals <b>' + gf + DASH + ga + '</b></span>' +
+                   '<span class="stat">Diff <b>' + (diff > 0 ? "+" : "") + diff + '</b></span>' +
+                   '<span class="stat"><b>' + pl + '</b> played</span>' +
+                   (mine.length > pl ? '<span class="stat"><b>' + (mine.length - pl) + '</b> to come</span>' : "") +
+                 '</div>' +
+               '</div>' + rows +
+             '</section>';
+    }
+    el.cards.innerHTML = out;
+  }
+
+  /* ---------------- rendering: schedule ---------------- */
+
+  function groups(){
+    var list = [], byKey = {};
+    for (var i=0;i<S.games.length;i++){
+      var g = S.games[i];
+      var k = (g.date || "?") + "|" + (g.day || "");
+      if (!byKey[k]){
+        byKey[k] = { k:k, date:g.date, day:g.day, games:[] };
+        list.push(byKey[k]);
+      }
+      byKey[k].games.push(g);
+    }
+    return list;
+  }
+
+  function initExpanded(gs){
+    if (S.expanded) return;
+    var today = nzToday();
+    var set = {};
+    var any = false;
+    for (var i=0;i<gs.length;i++){
+      if (gs[i].date && gs[i].date === today){ set[gs[i].k] = true; any = true; }
+    }
+    if (!any){
+      // no games today: open the day holding the next unplayed game, else the last day
+      for (var j=0;j<gs.length && !any;j++){
+        for (var m=0;m<gs[j].games.length;m++){
+          if (!gs[j].games[m].played){ set[gs[j].k] = true; any = true; break; }
+        }
+      }
+      if (!any && gs.length) set[gs[gs.length-1].k] = true;
+    }
+    S.expanded = set;
+  }
+
+  function nameHtml(name, src, isMine){
+    var h = '<span class="nm' + (isMine ? " mine" : "") + '">' + esc(name);
+    if (src && key(src) !== key(name)) h += '<span class="src">' + esc(src) + '</span>';
+    return h + '</span>';
+  }
+
+  function gameRow(g){
+    var idxs = teamIndex(g);
+    var cls = "g";
+    if (idxs.length > 1) cls += " tAB";
+    else if (idxs.length === 1) cls += (idxs[0] === 0 ? " tA" : " tB");
+
+    var top = '<span class="t">' + esc(g.time || "--:--") + '</span>';
+    if (g.court !== null) top += '<span>Court ' + esc(g.court) + '</span>';
+    if (g.stage) top += '<span class="stage">' + esc(g.stage) + '</span>';
+    else if (g.division) top += '<span class="stage">' + esc(g.division) + '</span>';
+    if (g.game !== null) top += '<span class="gno">#' + esc(g.game) + '</span>';
+
+    var mineW = false, mineB = false;
+    for (var i=0;i<S.teams.length;i++){
+      if (key(S.teams[i]) === key(g.white)) mineW = true;
+      if (key(S.teams[i]) === key(g.black)) mineB = true;
+    }
+
+    var mid;
+    if (g.played){
+      var wcls = g.ws > g.bs ? ' class="w"' : "", bcls = g.bs > g.ws ? ' class="w"' : "";
+      mid = '<div class="mid"><span' + wcls + '>' + esc(g.ws) + '</span> ' + DASH +
+            ' <span' + bcls + '>' + esc(g.bs) + '</span></div>';
+    } else {
+      mid = '<div class="mid pending">' + DASH + '</div>';
+    }
+
+    return '<div class="' + cls + '">' +
+             '<div class="top">' + top + '</div>' +
+             '<div class="body">' +
+               '<div class="side"><span class="chipdot white"></span>' + nameHtml(g.white, g.wsrc, mineW) + '</div>' +
+               mid +
+               '<div class="side b">' + nameHtml(g.black, g.bsrc, mineB) + '<span class="chipdot black"></span></div>' +
+             '</div>' +
+           '</div>';
+  }
+
+  function renderSchedule(){
+    var gs = groups();
+    initExpanded(gs);
+    var today = nzToday();
+    var out = "";
+
+    if (!gs.length){
+      el.sched.innerHTML = '<div class="notice">No games found in the draw.</div>';
+      return;
+    }
+
+    for (var i=0;i<gs.length;i++){
+      var grp = gs[i];
+      var isToday = !!grp.date && grp.date === today;
+      var open = !!S.expanded[grp.k];
+
+      // "next game" divider: first unplayed game of today (computed unfiltered)
+      var markOrd = -1;
+      if (isToday){
+        for (var m=0;m<grp.games.length;m++){
+          if (!grp.games[m].played){ markOrd = grp.games[m].ord; break; }
+        }
+      }
+
+      var rows = "", shown = 0, markDone = markOrd < 0;
+      for (var j=0;j<grp.games.length;j++){
+        var g = grp.games[j];
+        if (!visible(g)) continue;
+        if (!markDone && g.ord >= markOrd){
+          rows += '<div class="nextmark">▶ next game<span class="line"></span></div>';
+          markDone = true;
+        }
+        rows += gameRow(g);
+        shown++;
+      }
+      if (!shown){
+        rows = '<div class="empty">No games match the current filters.</div>';
+      }
+
+      var label = grp.day || grp.date || "Games";
+      out += '<section class="day' + (open ? " open" : "") + '" data-k="' + esc(grp.k) + '">' +
+               '<button class="dayhead" type="button" aria-expanded="' + open + '">' +
+                 '<span class="caret">▶</span>' +
+                 '<span>' + esc(label) + '</span>' +
+                 (isToday ? '<span class="today">Today</span>' : "") +
+                 '<span class="count">' + shown + (shown === 1 ? " game" : " games") + '</span>' +
+               '</button>' +
+               '<div class="daybody">' + rows + '</div>' +
+             '</section>';
+    }
+    el.sched.innerHTML = out;
+  }
+
+  el.sched.addEventListener("click", function(ev){
+    var head = ev.target.closest ? ev.target.closest(".dayhead") : null;
+    if (!head) return;
+    var sec = head.parentNode;
+    var k = sec.getAttribute("data-k");
+    var open = !sec.classList.contains("open");
+    sec.classList.toggle("open", open);
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    if (S.expanded){
+      if (open) S.expanded[k] = true; else delete S.expanded[k];
+    }
+  });
+
+  /* ---------------- load ---------------- */
+
+  function showStatus(html){ el.status.innerHTML = html; }
+
+  function showError(msg){
+    el.main.hidden = S.loaded ? false : true;
+    showStatus('<div class="notice err"><strong>Couldn\'t load the scores</strong>' +
+               esc(msg || "The results file could not be fetched.") +
+               '<br><button class="btn" id="retrybtn" type="button">Try again</button></div>');
+    var b = document.getElementById("retrybtn");
+    if (b) b.addEventListener("click", function(){ load(true); });
+    if (!S.loaded){
+      el.tvenue.textContent = "Results unavailable — tap Try again.";
+      el.tvenue.style.display = "";
+    }
+  }
+
+  function renderAll(){
+    renderHeader();
+    renderControls();
+    renderTeamCards();
+    renderSchedule();
+    el.main.hidden = false;
+    showStatus("");
+  }
+
+  function load(manual){
+    if (S.fetching) return;
+    S.fetching = true;
+    el.refresh.disabled = true;
+    if (!S.loaded) showStatus('<div class="notice">Loading the draw…</div>');
+
+    var url = "data.json?t=" + Date.now();
+    var done = false;
+    var timer = setTimeout(function(){
+      if (done) return;
+      done = true; S.fetching = false; el.refresh.disabled = false;
+      showError("The request timed out.");
+    }, 15000);
+
+    function fail(msg){
+      if (done) return;
+      done = true; clearTimeout(timer);
+      S.fetching = false; el.refresh.disabled = false;
+      showError(msg);
+    }
+    function ok(data){
+      if (done) return;
+      done = true; clearTimeout(timer);
+      S.fetching = false; el.refresh.disabled = false;
+      try{
+        S.raw = data && typeof data === "object" ? data : {};
+        S.games = normalise(S.raw);
+        S.loaded = true;
+        renderAll();
+      }catch(e){
+        showError("The results file could not be read (" + (e && e.message ? e.message : "parse error") + ").");
+      }
+    }
+
+    if (typeof fetch === "function"){
+      fetch(url, { cache:"no-store" }).then(function(r){
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }).then(ok).catch(function(e){
+        fail("Couldn't reach data.json — " + (e && e.message ? e.message : "network error") + ".");
+      });
+    } else {
+      var x = new XMLHttpRequest();
+      x.open("GET", url, true);
+      x.onreadystatechange = function(){
+        if (x.readyState !== 4) return;
+        if (x.status >= 200 && x.status < 300){
+          try { ok(JSON.parse(x.responseText)); }
+          catch(e){ fail("Malformed results file."); }
+        } else fail("HTTP " + x.status);
+      };
+      x.send();
+    }
+    if (manual) { /* no-op, kept for clarity */ }
+  }
+
+  setInterval(function(){ load(false); }, REFRESH_MS);
+  setInterval(function(){
+    if (S.loaded && S.raw) el.last.textContent = "last change " + relTime(S.raw.generated_at);
+  }, 30000);
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden && S.loaded) load(false);
+  });
+  el.refresh.addEventListener("click", function(){ load(true); });
+
+  load(false);
+})();
+</script>
+</body>
+</html>
