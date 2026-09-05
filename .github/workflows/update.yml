@@ -2,7 +2,8 @@ name: Update scores
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    # off-peak minutes: GitHub silently drops crons on busy slots like :00/:20/:40
+    - cron: '4,24,44 * * * *'
   workflow_dispatch:
 
 permissions:
