@@ -317,6 +317,11 @@ def parse_games(ws) -> list[dict]:
             black_cell = cell(ws, c_black, row)
             if not is_team_name(white_cell) or not is_team_name(black_cell):
                 continue
+            # A real fixture always has a start time; the Final Standings
+            # side table (place numbers + team names, no time) does not.
+            game_time = as_time(cell(ws, c_time, row))
+            if game_time is None:
+                continue
             white = as_text(white_cell)
             black = as_text(black_cell)
 
@@ -329,7 +334,7 @@ def parse_games(ws) -> list[dict]:
                     "game": number,
                     "day": current_day,
                     "date": current_date,
-                    "time": as_time(cell(ws, c_time, row)),
+                    "time": game_time,
                     "court": court,
                     "white": white,
                     "black": black,

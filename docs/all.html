@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Live scores and draw for the NZ Secondary Schools Underwater Hockey Nationals 2026.">
-<title>UWH Nationals 2026 — Live Scores</title>
+<meta name="description" content="Full draw and live scores for every team at the NZ Secondary Schools Underwater Hockey Nationals 2026.">
+<title>UWH Nationals 2026 — all teams</title>
 <style>
   :root{
     --bg:#080c11;
@@ -113,6 +113,20 @@
   .chip.tB{border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.08);color:var(--b-team)}
   .chip.tB[aria-pressed="true"]{background:var(--b-team);border-color:var(--b-team);color:#170f00}
 
+  /* ---------- team picker ---------- */
+  .pickrow{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .picklab{
+    flex:0 0 auto;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted2);font-weight:700;
+  }
+  .pick{
+    flex:1;min-width:0;background:var(--panel);color:var(--text);
+    border:1px solid var(--line2);border-radius:10px;
+    font-family:inherit;font-size:14px;font-weight:600;line-height:1.2;
+    padding:8px 10px;cursor:pointer;
+  }
+  .pick:focus{outline:2px solid rgba(58,214,255,.45);outline-offset:1px}
+
   /* ---------- team cards ---------- */
   .teamcard{margin-bottom:12px;border-left:4px solid var(--tc,var(--accent))}
   .teamhead{padding:13px 14px;background:var(--panel2);border-bottom:1px solid var(--line)}
@@ -150,6 +164,38 @@
     border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:1px;
   }
   .empty{padding:14px;color:var(--muted2);font-size:14px}
+
+  /* ---------- standings strip ---------- */
+  .standings{margin-bottom:12px}
+  .sthead{
+    padding:11px 14px;background:var(--panel2);border-bottom:1px solid var(--line);
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;
+  }
+  .strow{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 14px;border-top:1px solid var(--line);font-size:13px;
+  }
+  .sthead + .strow{border-top:0}
+  .strow .pos{
+    flex:0 0 16px;color:var(--muted2);font-size:11px;font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .strow .stnm{flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}
+  .strow .stw{flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums}
+  .strow .stg{flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums}
+  .strow .stdiff{
+    flex:0 0 auto;min-width:36px;text-align:right;
+    color:var(--muted);font-variant-numeric:tabular-nums;
+  }
+  .strow.tA{background:rgba(34,211,238,.07);box-shadow:inset 4px 0 0 var(--a-team)}
+  .strow.tA .stnm{color:var(--a-team)}
+  .strow.tB{background:rgba(251,191,36,.07);box-shadow:inset 4px 0 0 var(--b-team)}
+  .strow.tB .stnm{color:var(--b-team)}
+  .stnote{
+    padding:8px 14px;border-top:1px solid var(--line);background:var(--bg2);
+    color:var(--muted2);font-size:11px;
+  }
 
   /* ---------- schedule ---------- */
   .day{margin-bottom:10px}
@@ -232,7 +278,7 @@
 <div class="wrap">
 
   <header class="top">
-    <span class="eyebrow" id="eyebrow">Live scores</span>
+    <span class="eyebrow" id="eyebrow">All teams</span>
     <h1 id="tname">UWH Nationals 2026</h1>
     <p class="venue" id="tvenue">Loading draw…</p>
     <div class="metaline">
@@ -240,7 +286,7 @@
       <span class="tag live">Updated every 20 min</span>
       <span class="dot">·</span>
       <span id="lastchange">last change —</span>
-      <a class="tag" href="./all.html" style="text-decoration:none">All teams →</a>
+      <a class="tag" href="./index.html" style="text-decoration:none">← Howick view</a>
       <button class="refresh" id="refreshbtn" type="button" title="Reload now">↻</button>
     </div>
   </header>
@@ -249,13 +295,17 @@
 
   <main id="main" hidden>
     <div class="controls">
-      <div class="chips" id="teamfilter"></div>
+      <div class="chips" id="divfilter"></div>
+      <div class="pickrow">
+        <label class="picklab" for="teampick">Team</label>
+        <select class="pick" id="teampick"><option value="">All teams</option></select>
+      </div>
     </div>
 
-    <h2 class="sec">My teams</h2>
-    <div id="teamcards"></div>
+    <div id="summary"></div>
+    <div id="standings"></div>
 
-    <h2 class="sec">Full schedule</h2>
+    <h2 class="sec" id="schedhead">Full schedule</h2>
     <div id="schedule"></div>
   </main>
 
@@ -267,7 +317,8 @@
   "use strict";
 
   var FALLBACK_TEAMS = ["JOB HC-BD", "SGB Howick"];
-  var CHIP_LABELS = { "job hc-bd":"Howick JO", "sgb howick":"Howick SG" };
+  var DIVS = ["SGA","SGB","SOA","SOB","JGA","JGB","JOA","JOB"];
+  var PLACEHOLDER = /^(?:(?:SG|SO|JG|JO)\s+)?(?:Winner|Loser)\s+G\d+$/i;
   var REFRESH_MS = 5 * 60 * 1000;
   var TZ = "Pacific/Auckland";
   var DASH = "–";
@@ -275,9 +326,11 @@
   var S = {
     raw:null,
     games:[],
-    teams:FALLBACK_TEAMS.slice(),
-    active:[true,true],  // one flag per tracked team; at least one is always true
-    expanded:null,       // map of group keys, null until first load
+    teams:FALLBACK_TEAMS.slice(),   // the two tracked teams, for row colours
+    all:[],                         // every real team name in the data, sorted
+    div:"ALL",                      // "ALL" or one of DIVS
+    team:"",                        // "" or a name from S.all
+    toggled:{},                     // day keys the reader has flipped away from the default
     loaded:false,
     fetching:false
   };
@@ -290,8 +343,11 @@
     refresh:  document.getElementById("refreshbtn"),
     status:   document.getElementById("status"),
     main:     document.getElementById("main"),
-    teamf:    document.getElementById("teamfilter"),
-    cards:    document.getElementById("teamcards"),
+    divf:     document.getElementById("divfilter"),
+    pick:     document.getElementById("teampick"),
+    summary:  document.getElementById("summary"),
+    stand:    document.getElementById("standings"),
+    schedhd:  document.getElementById("schedhead"),
     sched:    document.getElementById("schedule"),
     foot:     document.getElementById("foot")
   };
@@ -315,6 +371,10 @@
   }
   function key(name){ return String(name || "").trim().toLowerCase(); }
   function pad2(n){ return (n < 10 ? "0" : "") + n; }
+  function cmp(a,b){
+    if (a.localeCompare) return a.localeCompare(b);
+    return a < b ? -1 : (a > b ? 1 : 0);
+  }
 
   function nzToday(){
     try{
@@ -368,13 +428,15 @@
     }
     if (!teams.length) teams = FALLBACK_TEAMS.slice();
     S.teams = teams;
-    syncActive();
 
     var out = [];
     for (var j=0;j<raw.length;j++){
       var g = raw[j] || {};
       // defensive: skip rows with no teams at all (shouldn't be emitted, but don't render junk)
       if (!str(g.white) && !str(g.black)) continue;
+      // and skip side-table rows the sheet parser sometimes picks up: a real fixture always
+      // carries a division or a kick-off time
+      if (!str(g.division) && !str(g.time)) continue;
       var ws = num(g.white_score), bs = num(g.black_score);
       out.push({
         i: j,
@@ -409,7 +471,25 @@
     return out;
   }
 
-  function teamIndex(g){          // 0 = first tracked team, 1 = second, -1 = none
+  // every real, playable team name: knockout placeholders and "TBC" are not teams
+  function teamNames(games){
+    var seen = {}, out = [];
+    for (var i=0;i<games.length;i++){
+      var sides = [games[i].white, games[i].black];
+      for (var s=0;s<2;s++){
+        var n = sides[s];
+        if (!n || n === "TBC" || PLACEHOLDER.test(n)) continue;
+        var k = key(n);
+        if (seen[k]) continue;
+        seen[k] = true;
+        out.push(n);
+      }
+    }
+    out.sort(cmp);
+    return out;
+  }
+
+  function teamIndex(g){          // indexes of the tracked teams playing in g
     var res = [];
     for (var i=0;i<S.teams.length;i++){
       var k = key(S.teams[i]);
@@ -417,24 +497,30 @@
     }
     return res;
   }
-
-  // keep S.active aligned with S.teams (list can change on a refetch) and never all-off
-  function syncActive(){
-    var a = [], anyOn = false;
-    for (var i=0;i<S.teams.length;i++){
-      var on = S.active[i] === undefined ? true : !!S.active[i];
-      a.push(on);
-      if (on) anyOn = true;
-    }
-    if (!anyOn) for (var j=0;j<a.length;j++) a[j] = true;
-    S.active = a;
+  function trackedIndex(name){
+    for (var i=0;i<S.teams.length;i++) if (key(S.teams[i]) === key(name)) return i;
+    return -1;
   }
-  function chipLabel(team){ return CHIP_LABELS[key(team)] || team; }
+  function toneClass(i){ return i === 0 ? "tA" : (i === 1 ? "tB" : ""); }
 
+  function inTeam(g, team){
+    return key(g.white) === key(team) || key(g.black) === key(team);
+  }
+  // a 4-letter chip also owns its group's knockout games, which are tagged with the
+  // 2-letter code (e.g. "JO Final" carries division "JO", so it shows under JOA and JOB)
+  function inDiv(g, code){
+    return g.division === code || g.division === code.slice(0,2);
+  }
   function visible(g){
-    var idxs = teamIndex(g);
-    for (var i=0;i<idxs.length;i++) if (S.active[idxs[i]]) return true;
-    return false;
+    if (S.team) return inTeam(g, S.team);
+    if (S.div !== "ALL") return inDiv(g, S.div);
+    return true;
+  }
+
+  function gamesFor(team){
+    var out = [];
+    for (var i=0;i<S.games.length;i++) if (inTeam(S.games[i], team)) out.push(S.games[i]);
+    return out;
   }
 
   /* ---------------- rendering: header ---------------- */
@@ -444,7 +530,7 @@
     var name = str(d.tournament) || "UWH Nationals 2026";
     var venue = str(d.venue);
     var ver = str(d.draw_version);
-    document.title = name + " — Live Scores";
+    document.title = name + " — all teams";
     el.tname.textContent = name;
     el.tvenue.textContent = venue || "";
     el.tvenue.style.display = venue ? "" : "none";
@@ -453,34 +539,50 @@
     if (ver) bits.push("Draw version " + ver);
     bits.push("Data from the official tournament sheet, refreshed every 20 minutes.");
     if (S.games.length) bits.push(S.games.length + " games in the draw.");
+    if (S.all.length) bits.push(S.all.length + " teams.");
     el.foot.textContent = bits.join(" · ");
   }
 
   /* ---------------- rendering: controls ---------------- */
 
   function renderControls(){
-    var html = "";
-    for (var i=0;i<S.teams.length;i++){
-      var tone = i === 0 ? " tA" : (i === 1 ? " tB" : "");
-      html += '<button class="chip' + tone + '" type="button" data-team="' + i + '" aria-pressed="' +
-              (S.active[i] ? "true" : "false") + '">' + esc(chipLabel(S.teams[i])) + '</button>';
+    var html = '<button class="chip" type="button" data-div="ALL" aria-pressed="' +
+               (S.div === "ALL" ? "true" : "false") + '">All</button>';
+    for (var i=0;i<DIVS.length;i++){
+      html += '<button class="chip" type="button" data-div="' + DIVS[i] + '" aria-pressed="' +
+              (S.div === DIVS[i] ? "true" : "false") + '">' + DIVS[i] + '</button>';
     }
-    el.teamf.innerHTML = html;
+    el.divf.innerHTML = html;
+
+    var opts = '<option value="">All teams</option>';
+    for (var t=0;t<S.all.length;t++){
+      opts += '<option value="' + esc(S.all[t]) + '">' + esc(S.all[t]) + '</option>';
+    }
+    el.pick.innerHTML = opts;
+    el.pick.value = S.team;
   }
 
-  el.teamf.addEventListener("click", function(ev){
-    var b = ev.target.closest ? ev.target.closest("button[data-team]") : null;
+  el.divf.addEventListener("click", function(ev){
+    var b = ev.target.closest ? ev.target.closest("button[data-div]") : null;
     if (!b) return;
-    var i = num(b.getAttribute("data-team"));
-    if (i === null || !S.active.length) return;
-    S.active[i] = !S.active[i];
-    syncActive();          // all-off resets every chip back on
-    renderControls();
-    renderTeamCards();
-    renderSchedule();
+    var code = b.getAttribute("data-div");
+    if (!code) return;
+    S.div = code;
+    S.team = "";           // a division pick clears the team pick
+    S.toggled = {};        // back to the default open/closed pattern
+    renderBody();
   });
 
-  /* ---------------- rendering: team cards ---------------- */
+  el.pick.addEventListener("change", function(){
+    var v = str(el.pick.value);
+    S.team = "";
+    for (var i=0;i<S.all.length;i++) if (key(S.all[i]) === key(v)) S.team = S.all[i];
+    if (S.team) S.div = "ALL";   // a team pick clears the division chip
+    S.toggled = {};
+    renderBody();
+  });
+
+  /* ---------------- rendering: team card ---------------- */
 
   function outcome(g, team){
     var mineWhite = key(g.white) === key(team);
@@ -491,82 +593,116 @@
              opp: mineWhite ? g.black : g.white, mineWhite: mineWhite };
   }
 
-  function renderTeamCards(){
-    var out = "";
-    for (var t=0;t<S.teams.length;t++){
-      if (!S.active[t]) continue;
-      var team = S.teams[t];
-      var colour = t === 0 ? "var(--a-team)" : (t === 1 ? "var(--b-team)" : "var(--accent)");
-      var mine = [];
-      for (var i=0;i<S.games.length;i++){
-        var g = S.games[i];
-        if (key(g.white) === key(team) || key(g.black) === key(team)) mine.push(g);
-      }
-      var w=0,dr=0,l=0,gf=0,ga=0,pl=0;
-      for (var j=0;j<mine.length;j++){
-        var o = outcome(mine[j], team);
-        if (!o) continue;
-        pl++;
-        gf += o.my; ga += o.th;
-        if (o.res === "W") w++; else if (o.res === "L") l++; else dr++;
-      }
-      var diff = gf - ga;
-      var nextOrd = -1;
-      for (var n=0;n<mine.length;n++){ if (!mine[n].played){ nextOrd = mine[n].ord; break; } }
-
-      var rows = "";
-      if (!mine.length){
-        rows = '<div class="empty">No games listed for this team yet.</div>';
-      } else {
-        for (var r=0;r<mine.length;r++){
-          var gm = mine[r];
-          var mineWhite = key(gm.white) === key(team);
-          var opp = mineWhite ? gm.black : gm.white;
-          var isNext = gm.ord === nextOrd;
-          var when = [];
-          if (gm.day || gm.date) when.push(dayShort(gm.day, gm.date));
-          if (gm.time) when.push(gm.time);
-          if (gm.court !== null) when.push("Court " + gm.court);
-          if (gm.game !== null) when.push("#" + gm.game);
-          if (gm.stage) when.push(gm.stage);
-          var right;
-          if (gm.played){
-            var oc = outcome(gm, team);
-            right = '<span class="score">' + esc(oc.my) + " " + DASH + " " + esc(oc.th) + '</span>' +
-                    '<span class="badge ' + oc.res + '">' + oc.res + '</span>';
-          } else {
-            right = '<span class="kick">' + esc(gm.time || "TBC") + '</span>';
-          }
-          rows += '<div class="tgame' + (isNext ? " next" : "") + '">' +
-                    '<div class="l">' +
-                      '<div class="when">' + esc(when.join(" · ")) +
-                        (isNext ? '<span class="pill-next">Next up</span>' : "") +
-                      '</div>' +
-                      '<div class="opp">' +
-                        '<span class="chipdot ' + (mineWhite ? "white" : "black") +
-                        '" style="display:inline-block;vertical-align:-1px;margin-right:5px"></span>' +
-                        '<span class="vs">vs</span> ' + esc(opp) +
-                      '</div>' +
-                    '</div>' +
-                    '<div class="r">' + right + '</div>' +
-                  '</div>';
-        }
-      }
-
-      out += '<section class="card teamcard" style="--tc:' + colour + '">' +
-               '<div class="teamhead">' +
-                 '<h3 class="teamname">' + esc(team) + '</h3>' +
-                 '<div class="record">' +
-                   '<span class="stat"><b>' + w + DASH + dr + DASH + l + '</b> W' + DASH + 'D' + DASH + 'L</span>' +
-                   '<span class="stat">Goals <b>' + gf + DASH + ga + '</b></span>' +
-                   '<span class="stat">Diff <b>' + (diff > 0 ? "+" : "") + diff + '</b></span>' +
-                   '<span class="stat"><b>' + pl + '</b> played</span>' +
-                   (mine.length > pl ? '<span class="stat"><b>' + (mine.length - pl) + '</b> to come</span>' : "") +
-                 '</div>' +
-               '</div>' + rows +
-             '</section>';
+  function record(team){
+    var mine = gamesFor(team);
+    var r = { games:mine, w:0, d:0, l:0, gf:0, ga:0, pl:0 };
+    for (var j=0;j<mine.length;j++){
+      var o = outcome(mine[j], team);
+      if (!o) continue;
+      r.pl++;
+      r.gf += o.my; r.ga += o.th;
+      if (o.res === "W") r.w++; else if (o.res === "L") r.l++; else r.d++;
     }
-    el.cards.innerHTML = out;
+    r.diff = r.gf - r.ga;
+    return r;
+  }
+
+  function renderSummary(){
+    if (!S.team){ el.summary.innerHTML = ""; return; }
+    var team = S.team;
+    var ti = trackedIndex(team);
+    var colour = ti === 0 ? "var(--a-team)" : (ti === 1 ? "var(--b-team)" : "var(--accent)");
+    var r = record(team), mine = r.games;
+
+    var nextOrd = -1;
+    for (var n=0;n<mine.length;n++){ if (!mine[n].played){ nextOrd = mine[n].ord; break; } }
+
+    var rows = "";
+    if (!mine.length){
+      rows = '<div class="empty">No games listed for this team yet.</div>';
+    } else {
+      for (var i=0;i<mine.length;i++){
+        var gm = mine[i];
+        var mineWhite = key(gm.white) === key(team);
+        var opp = mineWhite ? gm.black : gm.white;
+        var isNext = gm.ord === nextOrd;
+        var when = [];
+        if (gm.day || gm.date) when.push(dayShort(gm.day, gm.date));
+        if (gm.time) when.push(gm.time);
+        if (gm.court !== null) when.push("Court " + gm.court);
+        if (gm.game !== null) when.push("#" + gm.game);
+        if (gm.stage) when.push(gm.stage);
+        var right;
+        if (gm.played){
+          var oc = outcome(gm, team);
+          right = '<span class="score">' + esc(oc.my) + " " + DASH + " " + esc(oc.th) + '</span>' +
+                  '<span class="badge ' + oc.res + '">' + oc.res + '</span>';
+        } else {
+          right = '<span class="kick">' + esc(gm.time || "TBC") + '</span>';
+        }
+        rows += '<div class="tgame' + (isNext ? " next" : "") + '">' +
+                  '<div class="l">' +
+                    '<div class="when">' + esc(when.join(" · ")) +
+                      (isNext ? '<span class="pill-next">Next up</span>' : "") +
+                    '</div>' +
+                    '<div class="opp">' +
+                      '<span class="chipdot ' + (mineWhite ? "white" : "black") +
+                      '" style="display:inline-block;vertical-align:-1px;margin-right:5px"></span>' +
+                      '<span class="vs">vs</span> ' + esc(opp) +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="r">' + right + '</div>' +
+                '</div>';
+      }
+    }
+
+    el.summary.innerHTML =
+      '<section class="card teamcard" style="--tc:' + colour + '">' +
+        '<div class="teamhead">' +
+          '<h3 class="teamname">' + esc(team) + '</h3>' +
+          '<div class="record">' +
+            '<span class="stat"><b>' + r.w + DASH + r.d + DASH + r.l + '</b> W' + DASH + 'D' + DASH + 'L</span>' +
+            '<span class="stat">Goals <b>' + r.gf + DASH + r.ga + '</b></span>' +
+            '<span class="stat">Diff <b>' + (r.diff > 0 ? "+" : "") + r.diff + '</b></span>' +
+            '<span class="stat"><b>' + r.pl + '</b> played</span>' +
+            (mine.length > r.pl ? '<span class="stat"><b>' + (mine.length - r.pl) + '</b> to come</span>' : "") +
+          '</div>' +
+        '</div>' + rows +
+      '</section>';
+  }
+
+  /* ---------------- rendering: division standings ---------------- */
+
+  function renderStandings(){
+    if (S.team || S.div === "ALL"){ el.stand.innerHTML = ""; return; }
+    var code = S.div, rows = [];
+    for (var i=0;i<S.all.length;i++){
+      var nm = S.all[i];
+      if (nm.slice(0, code.length).toUpperCase() !== code) continue;
+      var r = record(nm);
+      r.name = nm;
+      rows.push(r);
+    }
+    if (!rows.length){ el.stand.innerHTML = ""; return; }
+    rows.sort(function(a,b){
+      if (a.w !== b.w) return b.w - a.w;
+      if (a.diff !== b.diff) return b.diff - a.diff;
+      return cmp(a.name, b.name);
+    });
+
+    var html = '<div class="sthead">' + esc(code) + ' standings</div>';
+    for (var j=0;j<rows.length;j++){
+      var t = rows[j], ti = trackedIndex(t.name), tone = toneClass(ti);
+      html += '<div class="strow' + (tone ? " " + tone : "") + '">' +
+                '<span class="pos">' + (j+1) + '</span>' +
+                '<span class="stnm">' + esc(t.name) + '</span>' +
+                '<span class="stw">' + t.w + "-" + t.d + "-" + t.l + '</span>' +
+                '<span class="stg">' + t.gf + DASH + t.ga + '</span>' +
+                '<span class="stdiff">' + (t.diff > 0 ? "+" : "") + t.diff + '</span>' +
+              '</div>';
+    }
+    html += '<div class="stnote">Record includes crossover/knockout games.</div>';
+    el.stand.innerHTML = '<section class="card standings">' + html + '</section>';
   }
 
   /* ---------------- rendering: schedule ---------------- */
@@ -585,12 +721,10 @@
     return list;
   }
 
-  function initExpanded(gs){
-    if (S.expanded) return;
-    // the filtered list is short, so every day starts open
-    var set = {};
-    for (var i=0;i<gs.length;i++) set[gs[i].k] = true;
-    S.expanded = set;
+  // a team pick is a short list, so open everything; otherwise only today is open
+  function isOpen(grp, today){
+    var def = S.team ? true : (!!grp.date && grp.date === today);
+    return S.toggled[grp.k] ? !def : def;
   }
 
   function nameHtml(name, src, isMine){
@@ -603,7 +737,7 @@
     var idxs = teamIndex(g);
     var cls = "g";
     if (idxs.length > 1) cls += " tAB";
-    else if (idxs.length === 1) cls += (idxs[0] === 0 ? " tA" : " tB");
+    else if (idxs.length === 1) cls += " " + toneClass(idxs[0]);
 
     var top = '<span class="t">' + esc(g.time || "--:--") + '</span>';
     if (g.court !== null) top += '<span>Court ' + esc(g.court) + '</span>';
@@ -638,9 +772,11 @@
 
   function renderSchedule(){
     var gs = groups();
-    initExpanded(gs);
     var today = nzToday();
     var out = "";
+
+    el.schedhd.textContent = S.team ? S.team + " — games"
+                           : (S.div === "ALL" ? "Full schedule" : S.div + " — games");
 
     if (!gs.length){
       el.sched.innerHTML = '<div class="notice">No games found in the draw.</div>';
@@ -650,7 +786,7 @@
     for (var i=0;i<gs.length;i++){
       var grp = gs[i];
       var isToday = !!grp.date && grp.date === today;
-      var open = !!S.expanded[grp.k];
+      var open = isOpen(grp, today);
 
       // "next game" divider: first unplayed game of today (computed unfiltered)
       var markOrd = -1;
@@ -684,7 +820,7 @@
                '<div class="daybody">' + rows + '</div>' +
              '</section>';
     }
-    el.sched.innerHTML = out || '<div class="notice">No games listed for the selected teams yet.</div>';
+    el.sched.innerHTML = out || '<div class="notice">No games match this filter yet.</div>';
   }
 
   el.sched.addEventListener("click", function(ev){
@@ -695,9 +831,7 @@
     var open = !sec.classList.contains("open");
     sec.classList.toggle("open", open);
     head.setAttribute("aria-expanded", open ? "true" : "false");
-    if (S.expanded){
-      if (open) S.expanded[k] = true; else delete S.expanded[k];
-    }
+    if (k) { if (S.toggled[k]) delete S.toggled[k]; else S.toggled[k] = true; }
   });
 
   /* ---------------- load ---------------- */
@@ -717,11 +851,16 @@
     }
   }
 
+  function renderBody(){
+    renderControls();
+    renderSummary();
+    renderStandings();
+    renderSchedule();
+  }
+
   function renderAll(){
     renderHeader();
-    renderControls();
-    renderTeamCards();
-    renderSchedule();
+    renderBody();
     el.main.hidden = false;
     showStatus("");
   }
@@ -732,7 +871,7 @@
     el.refresh.disabled = true;
     if (!S.loaded) showStatus('<div class="notice">Loading the draw…</div>');
 
-    var url = "data.json?t=" + Date.now();
+    var url = "./data.json?t=" + Date.now();
     var done = false;
     var timer = setTimeout(function(){
       if (done) return;
@@ -753,6 +892,13 @@
       try{
         S.raw = data && typeof data === "object" ? data : {};
         S.games = normalise(S.raw);
+        S.all = teamNames(S.games);
+        // keep the picks usable if the draw changed under us
+        if (S.team){
+          var still = "";
+          for (var i=0;i<S.all.length;i++) if (key(S.all[i]) === key(S.team)) still = S.all[i];
+          S.team = still;
+        }
         S.loaded = true;
         renderAll();
       }catch(e){
